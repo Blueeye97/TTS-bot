@@ -109,4 +109,6 @@ client.once('clientReady', () => {
   console.log("Bot đã online!");
 });
 
+console.log("ENV TOKEN:", process.env.TOKEN);
+
 client.login(TOKEN);
