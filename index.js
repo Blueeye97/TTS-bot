@@ -1,3 +1,6 @@
+const ffmpeg = require('ffmpeg-static');
+process.env.FFMPEG_PATH = ffmpeg;
+
 const express = require("express");
 const app = express();
 
@@ -83,7 +86,9 @@ client.on('messageCreate', async (message) => {
 
   tts.save(file, () => {
     const player = createAudioPlayer();
-    const resource = createAudioResource(file);
+    const resource = createAudioResource(file, {
+       inputType: 'arbitrary',
+    });
 
     connection.subscribe(player);
 
