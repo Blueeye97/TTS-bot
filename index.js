@@ -5,7 +5,7 @@ app.get("/", (req, res) => {
   res.send("Bot is alive!");
 });
 
-app.listen(3000, () => {
+app.listen(process.env.PORT || 3000, () => {
   console.log("Web server đang chạy");
 });
 const { Client, GatewayIntentBits } = require('discord.js');
@@ -77,7 +77,7 @@ client.on('messageCreate', async (message) => {
   });
 
   const text = message.content;
-  const file = "tts.mp3";
+  const file = `/tmp/tts-${Date.now()}.mp3`;
 
   const tts = new gTTS(text, DEFAULT_LANG);
 
