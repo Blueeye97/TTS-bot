@@ -34,22 +34,25 @@ const client = new Client({
 
 // ❗ DÁN TOKEN MỚI (đã reset) vào đây
 const TOKEN = process.env.TOKEN;
+const timeouts = new Map();
 
-let timeout = null;
-const DEFAULT_LANG = "vi";
-
-// ⏱ Auto leave sau 5 phút
 function resetTimer(guildId) {
-  if (timeout) clearTimeout(timeout);
+  if (timeouts.has(guildId)) {
+    clearTimeout(timeouts.get(guildId));
+  }
 
-  timeout = setTimeout(() => {
+  const newTimeout = setTimeout(() => {
     const conn = getVoiceConnection(guildId);
     if (conn) {
       conn.destroy();
       console.log("Bot đã tự thoát sau 5 phút");
     }
   }, 300000);
+
+  timeouts.set(guildId, newTimeout);
 }
+
+const DEFAULT_LANG = "vi";
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
@@ -84,23 +87,27 @@ client.on('messageCreate', async (message) => {
 
   const tts = new gTTS(text, DEFAULT_LANG);
 
-  tts.save(file, () => {
-    const player = createAudioPlayer();
-    const resource = createAudioResource(file, {
-       inputType: 'arbitrary',
-    });
+  tts.save(file, (err) => {
+  if (err) {
+    console.error("Lỗi TTS:", err);
+    return;
+  }
 
-    connection.subscribe(player);
-
-    // ⏳ delay nhẹ để tránh lỗi chưa connect xong
-    setTimeout(() => {
-      player.play(resource);
-    }, 500);
-
-    player.on(AudioPlayerStatus.Idle, () => {
-      if (fs.existsSync(file)) fs.unlinkSync(file);
-    });
+  const player = createAudioPlayer();
+  const resource = createAudioResource(file, {
+    inputType: 'arbitrary',
   });
+
+  connection.subscribe(player);
+
+  setTimeout(() => {
+    player.play(resource);
+  }, 500);
+
+  player.on(AudioPlayerStatus.Idle, () => {
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+  });
+});
 
   resetTimer(message.guild.id);
 });
@@ -110,5 +117,13 @@ client.once('clientReady', () => {
 });
 
 console.log("ENV TOKEN:", process.env.TOKEN);
+
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Promise Rejection:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
 
 client.login(TOKEN);
